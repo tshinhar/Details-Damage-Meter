@@ -29,3 +29,9 @@ jobs:
         uses: BigWigsMods/packager@v2
         env:
           GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Upload artifacts 
+        uses: actions/upload-artifact@v4
+        with:
+          name: Details
+          path: /Details*.zip
