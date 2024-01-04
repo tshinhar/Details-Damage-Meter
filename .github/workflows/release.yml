@@ -40,6 +40,13 @@ jobs:
           tag_exists_error: false
           message: "Latest release"
 
+      - name: Create a GitHub release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.tag_name.outputs.RELEASE_TAG }}
+          name: Release ${{ steps.tag_name.outputs.RELEASE_TAG }}
+          body: ${{ steps.tag_name.outputs.RELEASE_TAG }}
+
       - name: Package and release
         uses: BigWigsMods/packager@v2
         env:
