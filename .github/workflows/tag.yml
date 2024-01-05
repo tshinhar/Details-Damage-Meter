@@ -21,6 +21,6 @@ jobs:
         uses: rickstaa/action-create-tag@v1
         id: "tag_create"
         with:
-          tag: "${{ steps.tag_create.outputs.RELEASE_TAG }}"
+          tag: ${{ steps.tag_name.outputs.RELEASE_TAG }}
           tag_exists_error: false
           message: "Latest release"
