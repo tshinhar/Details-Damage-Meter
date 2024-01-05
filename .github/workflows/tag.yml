@@ -1,0 +1,26 @@
+name: Build Workflow
+
+on: 
+  pull_request_target:
+    types:
+      - closed
+  workflow_dispatch:
+
+  
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    
+      - name: Tag name
+        id: tag_name
+        run: |
+          echo "RELEASE_TAG=v$(date +'%y%m%d%H%M')" >> $GITHUB_OUTPUT
+
+      - name: create tag
+        uses: rickstaa/action-create-tag@v1
+        id: "tag_create"
+        with:
+          tag: ${{ steps.tag_create.outputs.RELEASE_TAG }}
+          tag_exists_error: false
+          message: "Latest release"
