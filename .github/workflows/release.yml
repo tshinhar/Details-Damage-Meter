@@ -1,13 +1,14 @@
 name: Release AddOn
 
-#on: [push]
 on:
-  workflow_run:
-    workflows: ["Tag Workflow"]
-    types:
-      - completed
-  workflow_dispatch:
-
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+    paths-ignore:
+      - '.github/**'
+      - 'ldoc.ltp'
 
 jobs:
 #  full_package_release:
