@@ -15,15 +15,6 @@ local Loc = _G.LibStub("AceLocale-3.0"):GetLocale("Details")
     all mythic segments have:
         .is_mythic_dungeon_segment = true
         .is_mythic_dungeon_run_id = run id from details.profile.mythic_dungeon_id
-    boss, 'trash overall' and 'dungeon overall' segments have:
-        .is_mythic_dungeon
-    boss segments have:
-        .is_boss
-    'trash overall' segments have:
-        .is_mythic_dungeon with .SegmentID = "trashoverall"
-    'dungeon overall' segment have:
-        .is_mythic_dungeon with .SegmentID = "overall"
-
 --]]
 
 local DetailsMythicPlusFrame = _G["DetailsMythicPlusFrame"]
@@ -114,6 +105,8 @@ function Details222.MythicPlus.OnBossDefeated(encounterID, encounterName)
         OverallSegment = false,
         Level = Details.MythicPlus.Level,
         EJID = Details.MythicPlus.ejID,
+        SegmentType = DETAILS_SEGMENTTYPE_MYTHICDUNGEON_BOSS,
+        SegmentName = (encounterName or Loc["STRING_UNKNOW"]) .. " (" .. string.lower(_G["BOSS"]) .. ")"
     }
 
     local mythicLevel = C_ChallengeMode.GetActiveKeystoneInfo()
@@ -132,7 +125,8 @@ function Details222.MythicPlus.OnBossDefeated(encounterID, encounterName)
 
         --iterate among segments
         for i = 1, 25 do --from the newer combat to the oldest
-            local pastCombat = segmentsTable [i]
+            ---@type combat
+            local pastCombat = segmentsTable[i]
             --does the combat exists
             if (pastCombat and not pastCombat._trashoverallalreadyadded and pastCombat.is_mythic_dungeon_trash) then
                 --is the combat a mythic segment from this run?
@@ -242,6 +236,8 @@ function DetailsMythicPlusFrame.MergeSegmentsOnEnd() --~merge
 		DungeonID = Details222.MythicPlus.DungeonID,
 		DungeonTexture = Details222.MythicPlus.Texture,
 		DungeonBackgroundTexture = Details222.MythicPlus.BackgroundTexture,
+        SegmentType = DETAILS_SEGMENTTYPE_MYTHICDUNGEON_OVERALL,
+        SegmentName = Details.MythicPlus.DungeonName .. " +" .. Details222.MythicPlus.Level,
     }
 
     --add all boss segments from this run to this new segment
@@ -282,7 +278,6 @@ function DetailsMythicPlusFrame.MergeSegmentsOnEnd() --~merge
     end
 
     newCombat.total_segments_added = totalSegments
-    newCombat.is_mythic_dungeon_segment = true
     newCombat.is_mythic_dungeon_run_id = Details.mythic_dungeon_id
 
     --check if both values are valid, this can get invalid if the player leaves the dungeon before the timer ends or the game crashes
@@ -308,6 +303,7 @@ function DetailsMythicPlusFrame.MergeSegmentsOnEnd() --~merge
 
     --immediatly finishes the segment just started
     Details:SairDoCombate()
+    newCombat.is_mythic_dungeon_segment = true
 
     --update all windows
     Details:InstanceCallDetailsFunc(Details.FadeHandler.Fader, "IN", nil, "barras")
@@ -334,7 +330,7 @@ function DetailsMythicPlusFrame.MergeSegmentsOnEnd() --~merge
 end
 
 --after each boss fight, if enalbed on settings, create an extra segment with all trash segments from the boss just killed
-function DetailsMythicPlusFrame.MergeTrashCleanup (isFromSchedule)
+function DetailsMythicPlusFrame.MergeTrashCleanup()
     if (DetailsMythicPlusFrame.DevelopmentDebug) then
         print("Details!", "MergeTrashCleanup() > running", DetailsMythicPlusFrame.TrashMergeScheduled and #DetailsMythicPlusFrame.TrashMergeScheduled)
     end
@@ -393,16 +389,18 @@ function DetailsMythicPlusFrame.MergeTrashCleanup (isFromSchedule)
             EJID = Details.MythicPlus.ejID,
             EncounterID = segmentsToMerge.EncounterID,
             EncounterName = segmentsToMerge.EncounterName or Loc ["STRING_UNKNOW"],
+            SegmentType = DETAILS_SEGMENTTYPE_MYTHICDUNGEON_BOSSTRASH,
+            SegmentName = (segmentsToMerge.EncounterName or Loc ["STRING_UNKNOW"]) .. " (" .. string.lower(Loc["STRING_SEGMENTS_LIST_TRASH"]) .. ")",
         }
 
         newCombat.is_mythic_dungeon_segment = true
         newCombat.is_mythic_dungeon_run_id = Details.mythic_dungeon_id
 
         --set the segment time / using a sum of combat times, this combat time is reliable
-        newCombat:SetStartTime (GetTime() - totalTime)
-        newCombat:SetEndTime (GetTime())
+        newCombat:SetStartTime(GetTime() - totalTime)
+        newCombat:SetEndTime(GetTime())
         --set the segment date
-        newCombat:SetDate (startDate, endDate)
+        newCombat:SetDate(startDate, endDate)
 
         if (DetailsMythicPlusFrame.DevelopmentDebug) then
             print("Details!", "MergeTrashCleanup() > finished merging trash segments.", Details.tabela_vigente, Details.tabela_vigente.is_boss)
@@ -522,7 +520,7 @@ function DetailsMythicPlusFrame.MergeRemainingTrashAfterAllBossesDone()
 
         if (not Details.tabela_vigente) then
             --assuming there's no segment from the dungeon run
-            Details:EntrarEmCombate()
+            Details:StartCombat()
             Details:SairDoCombate()
         end
 

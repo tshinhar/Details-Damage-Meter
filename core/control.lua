@@ -329,7 +329,8 @@
 		--flag Details! as 'in combat'
 		Details.in_combat = true
 
-		newCombatObject:seta_data(Details._detalhes_props.DATA_TYPE_START) --seta na tabela do combate a data do inicio do combate -- setup time data
+		local bSetStartTime = true
+		newCombatObject:SetDateToNow(bSetStartTime)
 
 		--set the combat id on the combat object
 		newCombatObject.combat_id = combatCounter
@@ -548,8 +549,10 @@
 		end
 
 		--salva hora, minuto, segundo do fim da luta
-		currentCombat:seta_data(Details._detalhes_props.DATA_TYPE_END)
-		currentCombat:seta_tempo_decorrido()
+		local bSetStartTime = false
+		local bSetEndTime = true
+		currentCombat:SetDateToNow(bSetStartTime, bSetEndTime)
+		currentCombat:SetEndTime(GetTime())
 
 		--drop last events table to garbage collector
 		currentCombat.player_last_events = {}
@@ -617,12 +620,25 @@
 					if (currentCombat.is_mythic_dungeon_segment) then --setted just above
 						--is inside a mythic+ dungeon and this is not a boss segment, so tag it as a dungeon mythic+ trash segment
 						local zoneName, instanceType, difficultyID, difficultyName, maxPlayers, dynamicDifficulty, isDynamic, instanceMapID, instanceGroupSize = GetInstanceInfo()
-						currentCombat.is_mythic_dungeon_trash = {
-							ZoneName = zoneName,
-							MapID = instanceMapID,
+
+						---@type mythicdungeoninfo
+						local mythicPlusInfo = {
+							ZoneName = Details.MythicPlus.DungeonName or zoneName,
+							MapID = Details.MythicPlus.DungeonID or instanceMapID,
 							Level = Details.MythicPlus.Level,
 							EJID = Details.MythicPlus.ejID,
+							RunID = Details.mythic_dungeon_id,
+							StartedAt = time() - currentCombat:GetCombatTime(),
+							EndedAt = time(),
+							SegmentID = Details.MythicPlus.SegmentID, --segment number within the dungeon
+							OverallSegment = false,
+							SegmentType = DETAILS_SEGMENTTYPE_MYTHICDUNGEON_TRASH,
+							SegmentName = "Trash #" .. (Details.MythicPlus.SegmentID or 0), --localize-me
 						}
+						currentCombat.is_mythic_dungeon = mythicPlusInfo
+
+						currentCombat.is_mythic_dungeon_trash = true
+
 						if (Details.debug) then
 							Details:Msg("segment tagged as mythic+ trash.")
 						end
