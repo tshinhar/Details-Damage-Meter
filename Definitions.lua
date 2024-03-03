@@ -115,19 +115,19 @@
 ---@field key7 guid pet guid
 
 ---@class bossinfo : table .is_boss on combatObjects
----@field diff_string string
----@field index number
----@field zone string
----@field encounter string
----@field mapid number
----@field try_number number
----@field name string
----@field ej_instance_id number
----@field id number
----@field unixtime unixtime
----@field diff number
----@field killed boolean
----@field bossimage texturepath|number
+---@field diff_string string?
+---@field index number?
+---@field zone string?
+---@field encounter string?
+---@field mapid number?
+---@field try_number number?
+---@field name string?
+---@field ej_instance_id number?
+---@field id number?
+---@field unixtime unixtime?
+---@field diff number?
+---@field killed boolean?
+---@field bossimage texturepath|number?
 
 ---@class details
 ---@field pets table<guid, petinfo> store the pet guid as the key and the petinfo as the value
@@ -216,7 +216,7 @@
 ---@field contra string the name of the player enemy in a 1v1 pvp combat
 ---@field bossTimers table[] stored timers for bigwigs and dbm
 ---@field last_events_tables table[] where the death log of each player is stored
----@field 
+---@field boss_hp number percentage of the health points of the boss
 ---@field 
 ---@field 
 ---@field 
@@ -238,10 +238,10 @@
 ---@field raid_roster table<string, string> [unitName] = unitGUID
 ---@field overall_added boolean is true when the combat got added into the overall combat
 ---@field is_mythic_dungeon mythicdungeoninfo
----@field is_mythic_dungeon_trash boolean
 ---@field is_mythic_dungeon_run_id number
 ---@field is_mythic_dungeon_segment boolean
 ---@field trinketProcs table<actorname, table<spellid, {cooldown: number, total: number}>>
+---@field _trashoverallalreadyadded boolean
 ---@field alternate_power table<actorname, alternatepowertable>
 ---@field totals {key1: table, key2: table, key3: table, key3: table}
 ---@field totals_grupo {key1: table, key2: table, key3: table, key3: table}
@@ -251,7 +251,7 @@
 ---@field is_world_trash_combat boolean when true this combat is a regular combat done in the world, not in a dungeon, raid, battleground, arena, ...
 ---@field player_last_events table<string, table[]> record the latest events of each player, latter used to build the death log
 ---@field
----@field
+---@field FindEnemyName fun(combat: combat) : string attempt to get the name of the enemy in the combat by getting the top most damaged unit by the player
 ---@field GetTryNumber fun(combat: combat) : number?
 ---@field GetFormattedCombatTime fun(combat: combat) : string
 ---@field GetMSTime fun(combat: combat) : number, number
@@ -259,7 +259,6 @@
 ---@field GetCombatName fun(combat: combat, bOnlyName: boolean?, bTryFind: boolean?) : string, number?, number?, number?, number? get the name of the combat
 ---@field GetCombatIcon fun(combat: combat) : df_atlasinfo
 ---@field GetTrinketProcsForPlayer fun(self: combat, playerName: string) : table<spellid, trinketprocdata> return a key|value table containing the spellId as key and a table with information about the trinket as value
----@field GetMythicDungeonTrashInfo fun(combat: combat) : mythicdungeontrashinfo
 ---@field IsMythicDungeon fun(combat: combat) : boolean, number return a boolean indicating if the combat is from a mythic+ dungeon, if true, also return the runId
 ---@field GetMythicDungeonInfo fun(combat: combat) : mythicdungeoninfo
 ---@field GetCombatType fun(combat: combat) : number
@@ -422,7 +421,7 @@
 ---@field friendlyfire_total number
 ---@field friendlyfire table<actorname, friendlyfiretable>
 ---@field damage_taken number amount of damage the actor took during the segment
----@field damage_from table<string, boolean> store the name of the actors which damaged the actor, format: [actorName] = true
+---@field damage_from table<actorname, boolean> store the name of the actors which damaged the actor, format: [actorName] = true
 ---@field totalabsorbed number amount of damage dealt by the actor by got absorbed by the target, this is a "ABSORB" type of miss but still counts as damage done
 ---@field augmentedSpellsContainer spellcontainer
 

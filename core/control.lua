@@ -63,6 +63,25 @@
 		end
 
 		local currentCombat = Details:GetCurrentCombat()
+		local playerActorObject = currentCombat:GetActor(DETAILS_ATTRIBUTE_DAMAGE, Details.playername)
+		if (playerActorObject) then
+			local targets = playerActorObject.targets
+
+			--make an array of targets {{targetName, amount}}
+			local targetsArray = {}
+			for targetName, amount in pairs(targets) do
+				table.insert(targetsArray, {targetName, amount})
+			end
+
+			--sort the array by amount
+			table.sort(targetsArray, Details.Sort2)
+
+			local targetName = targetsArray[1][1]
+
+			if (targetName) then
+				return targetName
+			end
+		end
 
 		for _, actor in ipairs(currentCombat[attributeDamage]._ActorTable) do
 			if (not actor.grupo and not actor.owner and not actor.nome:find("[*]") and bitBand(actor.flag_original, 0x00000060) ~= 0) then --0x20+0x40 neutral + enemy reaction
@@ -526,16 +545,11 @@
 			end
 		end
 
-		Details:OnCombatPhaseChanged()
-
-		if (currentCombat.bossFunction) then
-			Details:CancelTimer(currentCombat.bossFunction)
-			currentCombat.bossFunction = nil
-		end
-
 		if (currentCombat.is_challenge or Details.debug) then
 			--Details222.AuraScan.Stop() --combat ended (m+ active)
 		end
+
+		Details:OnCombatPhaseChanged()
 
 		--stop combat ticker
 		Details:StopCombatTicker()
@@ -548,7 +562,6 @@
 			Details:CloseShields(currentCombat)
 		end
 
-		--salva hora, minuto, segundo do fim da luta
 		local bSetStartTime = false
 		local bSetEndTime = true
 		currentCombat:SetDateToNow(bSetStartTime, bSetEndTime)
@@ -558,14 +571,12 @@
 		currentCombat.player_last_events = {}
 
 		--flag instance type
-		local _, InstanceType = GetInstanceInfo()
-		currentCombat.instance_type = InstanceType
+		local zoneName, instanceType, DifficultyID, DifficultyName, _, _, _, zoneMapID = GetInstanceInfo()
+		currentCombat.instance_type = instanceType
 
 		if (not currentCombat.is_boss and bIsFromEncounterEnd and type(bIsFromEncounterEnd) == "table") then
 			local encounterID, encounterName, difficultyID, raidSize, endStatus = unpack(bIsFromEncounterEnd)
 			if (encounterID) then
-				local ZoneName, InstanceType, DifficultyID, DifficultyName, _, _, _, ZoneMapID = GetInstanceInfo()
-
 				local mapID = C_Map.GetBestMapForUnit("player")
 
 				if (not mapID) then
@@ -577,14 +588,14 @@
 					ejid = Details:GetInstanceEJID()
 				end
 
-				local _, boss_index = Details:GetBossEncounterDetailsFromEncounterId(ZoneMapID, encounterID)
+				local _, boss_index = Details:GetBossEncounterDetailsFromEncounterId(zoneMapID, encounterID)
 
 				currentCombat.is_boss = {
 					index = boss_index or 0,
 					name = encounterName,
 					encounter = encounterName,
-					zone = ZoneName,
-					mapid = ZoneMapID,
+					zone = zoneName,
+					mapid = zoneMapID,
 					diff = DifficultyID,
 					diff_string = DifficultyName,
 					ej_instance_id = ejid or 0,
@@ -599,6 +610,24 @@
 		if (mythicLevel and mythicLevel >= 2) then
 			currentCombat.is_mythic_dungeon_segment = true
 			currentCombat.is_mythic_dungeon_run_id = Details.mythic_dungeon_id
+
+			if (not currentCombat.is_mythic_dungeon) then
+				---@type mythicdungeoninfo
+				local mythicPlusInfo = {
+					ZoneName = Details.MythicPlus.DungeonName or zoneName,
+					MapID = Details.MythicPlus.DungeonID or zoneMapID,
+					Level = Details.MythicPlus.Level,
+					EJID = Details.MythicPlus.ejID,
+					RunID = Details.mythic_dungeon_id,
+					StartedAt = time() - currentCombat:GetCombatTime(),
+					EndedAt = time(),
+					SegmentID = Details.MythicPlus.SegmentID, --segment number within the dungeon
+					--default to trash
+					SegmentType = DETAILS_SEGMENTTYPE_MYTHICDUNGEON_TRASH,
+					SegmentName = "Trash #" .. (Details.MythicPlus.SegmentID or 0), --localize-me
+				}
+				currentCombat.is_mythic_dungeon = mythicPlusInfo
+			end
 		end
 
 		--send item level after a combat if is in raid or party group
@@ -606,69 +635,39 @@
 
 		--if this segment isn't a boss fight
 		if (not currentCombat.is_boss) then
+			--is arena or battleground
 			if (currentCombat.is_pvp or currentCombat.is_arena) then
 				Details:FlagActorsOnPvPCombat()
 			end
 
+			--is arena
 			if (currentCombat.is_arena) then
 				currentCombat.enemy = "[" .. ARENA .. "] " ..  currentCombat.is_arena.name
 			end
 
-			local in_instance = IsInInstance() --garrison returns party as instance type.
-			if ((InstanceType == "party" or InstanceType == "raid") and in_instance) then
-				if (InstanceType == "party") then
-					if (currentCombat.is_mythic_dungeon_segment) then --setted just above
-						--is inside a mythic+ dungeon and this is not a boss segment, so tag it as a dungeon mythic+ trash segment
-						local zoneName, instanceType, difficultyID, difficultyName, maxPlayers, dynamicDifficulty, isDynamic, instanceMapID, instanceGroupSize = GetInstanceInfo()
-
-						---@type mythicdungeoninfo
-						local mythicPlusInfo = {
-							ZoneName = Details.MythicPlus.DungeonName or zoneName,
-							MapID = Details.MythicPlus.DungeonID or instanceMapID,
-							Level = Details.MythicPlus.Level,
-							EJID = Details.MythicPlus.ejID,
-							RunID = Details.mythic_dungeon_id,
-							StartedAt = time() - currentCombat:GetCombatTime(),
-							EndedAt = time(),
-							SegmentID = Details.MythicPlus.SegmentID, --segment number within the dungeon
-							OverallSegment = false,
-							SegmentType = DETAILS_SEGMENTTYPE_MYTHICDUNGEON_TRASH,
-							SegmentName = "Trash #" .. (Details.MythicPlus.SegmentID or 0), --localize-me
-						}
-						currentCombat.is_mythic_dungeon = mythicPlusInfo
-
-						currentCombat.is_mythic_dungeon_trash = true
-
-						if (Details.debug) then
-							Details:Msg("segment tagged as mythic+ trash.")
-						end
-					else
-						--tag the combat as trash clean up
-						currentCombat.is_trash = true
-					end
-				else
+			--check if the player is in an instance
+			local bInInstance = IsInInstance() --garrison returns party as instance type.
+			if ((instanceType == "party" or instanceType == "raid") and bInInstance) then
+				--if is not boss and inside a instance of type party or raid: mark the combat as trash
+				if (not currentCombat.is_mythic_dungeon) then
 					currentCombat.is_trash = true
 				end
 			else
-				if (not in_instance) then
+				if (not bInInstance) then
 					if (Details.world_combat_is_trash) then
 						currentCombat.is_world_trash_combat = true
 					end
 				end
 			end
 
-			if (not currentCombat.enemy) then
-				local enemy = Details:FindEnemy()
-
-				if (enemy and Details.debug) then
-					--Details:Msg("(debug) enemy found", enemy)
-				end
-
-				currentCombat.enemy = enemy
+			if (not currentCombat.enemy or currentCombat.enemy == Details222.Unknown) then
+				local enemyName = currentCombat:FindEnemyName()
+				currentCombat.enemy = enemyName
 			end
 
-			Details:FlagActorsOnCommonFight() --fight_component
+			Details:FlagActorsOnCommonFight()
 		else
+			--combat is boss encounter
 			--calling here without checking for combat since the does not ran too long for scripts
 			Details:FlagActorsOnBossFight()
 
@@ -685,6 +684,11 @@
 					Details.schedule_store_boss_encounter = true
 				end
 
+				if (currentCombat.is_mythic_dungeon_segment) then
+					currentCombat.is_mythic_dungeon.SegmentType = DETAILS_SEGMENTTYPE_MYTHICDUNGEON_BOSS
+					currentCombat.is_mythic_dungeon.SegmentName = (currentCombat.is_boss.name or Loc["STRING_UNKNOW"]) .. " (" .. string.lower(_G["BOSS"]) .. ")"
+				end
+
 				Details:SendEvent("COMBAT_BOSS_DEFEATED", nil, currentCombat)
 				Details:CheckFor_TrashSuppressionOnEncounterEnd()
 			else
@@ -697,6 +701,11 @@
 					end
 				else
 					Details.schedule_store_boss_encounter_wipe = true
+				end
+
+				if (currentCombat.is_mythic_dungeon_segment) then
+					currentCombat.is_mythic_dungeon.SegmentType = DETAILS_SEGMENTTYPE_MYTHICDUNGEON_BOSSWIPE
+					currentCombat.is_mythic_dungeon.SegmentName = (currentCombat.is_boss.name or Loc["STRING_UNKNOW"]) .. " (" .. string.lower(_G["BOSS"]) .. ")"
 				end
 			end
 
@@ -1323,12 +1332,13 @@
 	end
 
 	function Details:FlagActorsOnCommonFight()
-		local damage_container = Details.tabela_vigente [1]
-		local healing_container = Details.tabela_vigente [2]
-		local energy_container = Details.tabela_vigente [3]
-		local misc_container = Details.tabela_vigente [4]
+		local currentCombat = Details:GetCurrentCombat()
+		local damage_container = currentCombat[1]
+		local healing_container = currentCombat[2]
+		local energy_container = currentCombat[3]
+		local misc_container = currentCombat[4]
 
-		local mythicDungeonRun = Details.tabela_vigente.is_mythic_dungeon_segment
+		local mythicDungeonRun = currentCombat.is_mythic_dungeon_segment
 
 		for class_type, container in ipairs({damage_container, healing_container}) do
 
