@@ -1,5 +1,6 @@
 
----lower instance: each instance has an ID, starts from 1 and goes on, the lower instance is the opened instance with the lower ID.
+--lower instance: each instance has an ID, starts from 1 and goes on, the lower instance is the opened instance with the lower ID.
+--training dummy: a npc within major cities in world of warcraft where players can cast spells and attack to test their damage and healing output
 
 ---@alias plugintype
 ---| "SOLO"
@@ -138,6 +139,9 @@
 ---@field TextureAtlas table<atlasname, df_atlasinfo>
 ---@field playername string
 ---@field breakdown_general profile_breakdown_settings
+---@field DefaultTooltipIconSize number default size of the icons in the tooltip, this also dictates the size of each line in the tooltip
+---@field 
+---@field 
 ---@field 
 ---@field GetDisplayClassByDisplayId fun(self: details, displayId: number) : table -return the class object for the given displayId (attributeId)
 ---@field GetTextureAtlas fun(self: details, atlasName: atlasname) : df_atlasinfo return the texture atlas data
@@ -218,7 +222,7 @@
 ---@field bossTimers table[] stored timers for bigwigs and dbm
 ---@field last_events_tables table[] where the death log of each player is stored
 ---@field boss_hp number percentage of the health points of the boss
----@field 
+---@field training_dummy boolean if true, the combat is against a training dummy
 ---@field 
 ---@field 
 ---@field __call table
@@ -388,6 +392,7 @@
 ---@field serial string
 ---@field spec number
 ---@field grupo boolean
+---@field classe string
 ---@field fight_component boolean
 ---@field boss_fight_component boolean
 ---@field pvp_component boolean
