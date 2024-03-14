@@ -273,7 +273,35 @@ Details.TextureAtlas = {
         width = 12,
         height = 12,
         colorName = "silver",
-    }
+    },
+
+    ["right-mouse-click"] = {
+        file = [[Interface\TUTORIALFRAME\UI-TUTORIAL-FRAME]],
+        width = 52,
+        height = 76,
+        leftTexCoord = 13/512,
+        rightTexCoord = 64/512,
+        topTexCoord = 332/512,
+        bottomTexCoord = 408/512,
+        tilesHorizontally = false,
+        tilesVertically = false,
+        nativeWidth = 512,
+        nativeHeight = 512,
+    },
+
+    ["small-clock"] = {
+        file = [[Interface\AddOns\Details\images\icons]],
+        width = 16,
+        height = 16,
+        leftTexCoord = 211/512,
+        rightTexCoord = 245/512,
+        topTexCoord = 145/512,
+        bottomTexCoord = 179/512,
+        tilesHorizontally = false,
+        tilesVertically = false,
+        nativeWidth = 512,
+        nativeHeight = 512,
+    },
 }
 
 C_Timer.After(1, function()
