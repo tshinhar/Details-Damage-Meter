@@ -1536,9 +1536,15 @@ function SlashCmdList.DETAILS (msg, editbox)
 	elseif (msg == "generateracialslist") then
 		Details.GenerateRacialSpellList()
 
-	elseif (msg == "survey") then
+	elseif (msg == "bug") then
+		dumpt(DETAILS_FAILED_ACTOR or {"No bug to report here."})
+
+	elseif (msg == "spellcat") then
 		Details.Survey.OpenSurveyPanel()
 
+	elseif (msg == "pstate") then
+		local sEngineState = Details222.Parser.GetState()
+		Details:Msg("Parser State:", sEngineState)
 	else
 
 		--if (_detalhes.opened_windows < 1) then
@@ -2054,6 +2060,10 @@ if (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE) then
 
 							local unitName, level, mapID, challengeMapID, classID, rating, mythicPlusMapID, classIconTexture, iconTexCoords, mapName, inMyParty, isOnline, isGuildMember = unpack(unitTable)
 
+							if (mapName == "") then
+								mapName = "user need update details!"
+							end
+
 							local rioProfile
 							if (RaiderIO) then
 								local playerName, playerRealm = unitName:match("(.+)%-(.+)")
@@ -2209,6 +2219,17 @@ if (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE) then
 					newData.offlineGuildPlayers = {}
 					local keystoneData = openRaidLib.GetAllKeystonesInfo()
 
+					--[=[
+						["Exudragão"] =  {
+							["mapID"] = 2526,
+							["challengeMapID"] = 402,
+							["mythicPlusMapID"] = 0,
+							["rating"] = 215,
+							["classID"] = 13,
+							["level"] = 6,
+						},
+					--]=]
+
 					local guildUsers = {}
 					local totalMembers, onlineMembers, onlineAndMobileMembers = GetNumGuildMembers()
 
@@ -2250,7 +2271,12 @@ if (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE) then
 							local coords = CLASS_ICON_TCOORDS
 							local _, class = GetClassInfo(classId)
 
-							local mapName = C_ChallengeMode.GetMapUIInfo(keystoneInfo.mythicPlusMapID) or ""
+							local mapName = C_ChallengeMode.GetMapUIInfo(keystoneInfo.mythicPlusMapID)
+							if (not mapName) then
+								mapName = C_ChallengeMode.GetMapUIInfo(keystoneInfo.challengeMapID)
+							end
+
+							mapName = mapName or "map name not found"
 
 							--local mapInfoChallenge = C_Map.GetMapInfo(keystoneInfo.challengeMapID)
 							--local mapNameChallenge = mapInfoChallenge and mapInfoChallenge.name or ""
