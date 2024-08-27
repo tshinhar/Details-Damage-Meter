@@ -732,10 +732,9 @@ Details.background_tasks_loop = Details:ScheduleRepeatingTimer("DoBackgroundTask
 ------
 local hasGroupMemberInCombat = function()
 	--iterate over party or raid members and check if any one of them are in combat, if any are return true
-	if (not IsInRaid()) then
-		--summing the player as the party unitId cache do include the player unitId and the GetNumGroupMembers() doesn't count the player
-		local amountOfPartyMembers = GetNumGroupMembers() + 1
-		for i, unitId in ipairs(Details222.UnitIdCache.Party) do
+	if (IsInRaid()) then
+		local amountOfPartyMembers = GetNumGroupMembers()
+		for i, unitId in ipairs(Details222.UnitIdCache.Raid) do
 			if (i <= amountOfPartyMembers) then
 				if (UnitAffectingCombat(unitId)) then
 					return true
@@ -745,8 +744,8 @@ local hasGroupMemberInCombat = function()
 			end
 		end
 	else
-		local amountOfPartyMembers = GetNumGroupMembers()
-		for i, unitId in ipairs(Details222.UnitIdCache.Raid) do
+		local amountOfPartyMembers = GetNumGroupMembers() + 1
+		for i, unitId in ipairs(Details222.UnitIdCache.Party) do
 			if (i <= amountOfPartyMembers) then
 				if (UnitAffectingCombat(unitId)) then
 					return true
@@ -761,17 +760,27 @@ local hasGroupMemberInCombat = function()
 end
 
 local checkForGroupCombat_Ticker = function()
+	local instanceName, isntanceType = GetInstanceInfo()
+	if (isntanceType ~= "none") then
+		if (Details222.parser_frame:GetScript("OnEvent") ~= Details222.Parser.OnParserEvent) then
+			Details222.parser_frame:SetScript("OnEvent", Details222.Parser.OnParserEvent)
+		end
+		Details222.Parser.EventFrame.ticker:Cancel()
+		Details222.Parser.EventFrame.ticker = nil
+		return
+	end
+
 	if (hasGroupMemberInCombat()) then
 		Details222.parser_frame:SetScript("OnEvent", Details222.Parser.OnParserEvent)
 	else
-		Details222.parser_frame:SetScript("OnEvent", nil)
+		Details222.parser_frame:SetScript("OnEvent", Details222.Parser.OnParserEventOutOfCombat)
 		Details222.Parser.EventFrame.ticker:Cancel()
 		Details222.Parser.EventFrame.ticker = nil
 	end
 end
 
 --~parser
-local bConsiderGroupMembers = false
+local bConsiderGroupMembers = true
 Details222.Parser.Handler = {}
 Details222.Parser.EventFrame = CreateFrame("frame")
 Details222.Parser.EventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -779,18 +788,25 @@ Details222.Parser.EventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 Details222.Parser.EventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 Details222.Parser.EventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 Details222.Parser.EventFrame:SetScript("OnEvent", function(self, event, ...)
-	local bIsOpenWorld = select(2, GetInstanceInfo()) == "none"
+	local instanceName, isntanceType = GetInstanceInfo()
 
-	if (not bIsOpenWorld) then
-		Details222.parser_frame:SetScript("OnEvent", Details222.Parser.OnParserEvent)
+	if (isntanceType == "pvp" or isntanceType == "arena") then
+		Details222.parser_frame:SetScript("OnEvent", Details222.Parser.OnParserEventPVP)
+		return
+	end
+
+	if (isntanceType ~= "none") then
+		if (Details222.parser_frame:GetScript("OnEvent") ~= Details222.Parser.OnParserEvent) then
+			Details222.parser_frame:SetScript("OnEvent", Details222.Parser.OnParserEvent)
+		end
 		return
 	end
 
 	if (event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA") then
 		if (bConsiderGroupMembers) then
+			--check if any group member is in combat
 			if (hasGroupMemberInCombat()) then
 				Details222.parser_frame:SetScript("OnEvent", Details222.Parser.OnParserEvent)
-
 				--initiate a ticker to check if a unit in the group is still in combat
 				if (not Details222.Parser.EventFrame.ticker) then
 					Details222.Parser.EventFrame.ticker = C_Timer.NewTicker(1, checkForGroupCombat_Ticker)
@@ -799,7 +815,8 @@ Details222.Parser.EventFrame:SetScript("OnEvent", function(self, event, ...)
 				Details222.parser_frame:SetScript("OnEvent", Details222.Parser.OnParserEventOutOfCombat)
 			end
 		else
-			if (UnitAffectingCombat("player")) then
+			--player is alone
+			if (InCombatLockdown()) then
 				Details222.parser_frame:SetScript("OnEvent", Details222.Parser.OnParserEvent)
 			else
 				Details222.parser_frame:SetScript("OnEvent", Details222.Parser.OnParserEventOutOfCombat)
@@ -811,9 +828,9 @@ Details222.Parser.EventFrame:SetScript("OnEvent", function(self, event, ...)
 
 	elseif (event == "PLAYER_REGEN_ENABLED") then
 		if (bConsiderGroupMembers) then
+			--check if any group member is in combat
 			if (hasGroupMemberInCombat()) then
 				Details222.parser_frame:SetScript("OnEvent", Details222.Parser.OnParserEvent)
-
 				--initiate a ticker to check if a unit in the group is still in combat
 				if (not Details222.Parser.EventFrame.ticker) then
 					Details222.Parser.EventFrame.ticker = C_Timer.NewTicker(1, checkForGroupCombat_Ticker)
@@ -827,10 +844,21 @@ Details222.Parser.EventFrame:SetScript("OnEvent", function(self, event, ...)
 	end
 end)
 
+--create a details listener which registers the combat enter event, create the function to receive the registerted event ad call the Details222.Parser.EventFrame:OnEvent with player_regen_disable
+local detailsEnterInCombatListener = Details:CreateEventListener()
+detailsEnterInCombatListener:RegisterEvent("COMBAT_PLAYER_ENTER") --COMBAT_PLAYER_ENTER from events.lua, this event is triggered when Details! enter in combat
+function detailsEnterInCombatListener:OnEvent()
+	if (Details222.Parser.GetState() == "STATE_RESTRICTED") then
+		Details222.Parser.EventFrame:GetScript("OnEvent")(Details222.Parser.EventFrame, "PLAYER_REGEN_DISABLED")
+	end
+end
+
 function Details222.Parser.GetState()
 	local parserEngine = Details222.parser_frame:GetScript("OnEvent")
 	if (parserEngine == Details222.Parser.OnParserEvent) then
 		return "STATE_REGULAR"
+	elseif (parserEngine == Details222.Parser.OnParserEventPVP) then
+		return "STATE_PVP"
 	elseif (parserEngine == Details222.Parser.OnParserEventOutOfCombat) then
 		return "STATE_RESTRICTED"
 	end
@@ -1932,7 +1960,7 @@ function Details.Database.StoreEncounter(combat)
 			dps_best_raid = 0,
 			dps_best_raid_when = 0
 		}
-		print(4)
+
 		---@type details_bosskillinfo
 		local bossData = totalkillsTable[encounterId][diffName]
 		---@type combattime
@@ -1969,7 +1997,7 @@ function Details.Database.StoreEncounter(combat)
 			bossData.dps_best_raid_when = time()
 		end
 	end
-	print(5, diffName)
+	
 	--check for heroic and mythic
 	if (Details222.storage.IsDebug or Details222.storage.DiffNamesHash[diffName]) then
 		--check the guild name
@@ -2018,8 +2046,6 @@ function Details.Database.StoreEncounter(combat)
 		local damageContainer = combat:GetContainer(DETAILS_ATTRIBUTE_DAMAGE)
 		local healingContainer = combat:GetContainer(DETAILS_ATTRIBUTE_HEAL)
 
-		print(6, diffName)
-
 		for i = 1, GetNumGroupMembers() do
 			local role = UnitGroupRolesAssigned(cachedRaidUnitIds[i])
 
@@ -2060,8 +2086,6 @@ function Details.Database.StoreEncounter(combat)
 				end
 			end
 		end
-
-		print(7, diffName)
 
 		--add the encounter data
 		tinsert(allEncountersStored, combatResultData)
@@ -2163,7 +2187,7 @@ local MAX_INSPECT_AMOUNT = 1
 local MIN_ILEVEL_TO_STORE = 50
 local LOOP_TIME = 7
 
-function Details:IlvlFromNetwork(player, realm, core, serialNumber, itemLevel, talentsSelected, currentSpec)
+function Details:IlvlFromNetwork(unitName, realmName, coreVersion, unitGUID, itemLevel, talentsSelected, currentSpec)
 	if (Details.debug and false) then
 		local talents = "Invalid Talents"
 		if (type(talentsSelected) == "table") then
@@ -2172,44 +2196,44 @@ function Details:IlvlFromNetwork(player, realm, core, serialNumber, itemLevel, t
 				talents = talents .. talentsSelected [i] .. ","
 			end
 		end
-		Details222.DebugMsg("Received PlayerInfo Data: " ..(player or "Invalid Player Name") .. " | " ..(itemLevel or "Invalid Item Level") .. " | " ..(currentSpec or "Invalid Spec") .. " | " .. talents  .. " | " ..(serialNumber or "Invalid Serial"))
+		Details222.DebugMsg("Received PlayerInfo Data: " ..(unitName or "Invalid Player Name") .. " | " ..(itemLevel or "Invalid Item Level") .. " | " ..(currentSpec or "Invalid Spec") .. " | " .. talents  .. " | " ..(unitGUID or "Invalid Serial"))
 	end
 
-	if (not player) then
+	if (not unitName) then
 		return
 	end
 
 	--older versions of details wont send serial nor talents nor spec
-	if (not serialNumber or not itemLevel or not talentsSelected or not currentSpec) then
+	if (not unitGUID or not itemLevel or not talentsSelected or not currentSpec) then
 		--if any data is invalid, abort
 		return
 	end
 
 	--won't inspect this actor
-	Details.trusted_characters[serialNumber] = true
+	Details.trusted_characters[unitGUID] = true
 
-	if (type(serialNumber) ~= "string") then
+	if (type(unitGUID) ~= "string") then
 		return
 	end
 
 	--store the item level
 	if (type(itemLevel) == "number") then
-		Details.item_level_pool[serialNumber] = {name = player, ilvl = itemLevel, time = time()}
+		Details.item_level_pool[unitGUID] = {name = unitName, ilvl = itemLevel, time = time()}
 	end
 
 	--store talents
 	if (type(talentsSelected) == "table") then
 		if (talentsSelected[1]) then
-			Details.cached_talents[serialNumber] = talentsSelected
+			Details.cached_talents[unitGUID] = talentsSelected
 		end
 
 	elseif (type(talentsSelected) == "string" and talentsSelected ~= "") then
-		Details.cached_talents[serialNumber] = talentsSelected
+		Details.cached_talents[unitGUID] = talentsSelected
 	end
 
 	--store the spec the player is playing
 	if (type(currentSpec) == "number") then
-		Details.cached_specs[serialNumber] = currentSpec
+		Details.cached_specs[unitGUID] = currentSpec
 	end
 end
 
@@ -2562,9 +2586,7 @@ function ilvl_core:ZoneChanged(zone_type)
 end
 
 function ilvl_core:OnEnter()
-	if (IsInRaid()) then
-		Details:SendCharacterData()
-	end
+	Details:SendCharacterData()
 
 	if (can_start_loop()) then
 		ilvl_core:Reset()
