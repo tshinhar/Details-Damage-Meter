@@ -181,8 +181,11 @@
 ---@field ListInstances fun(self: details) : instance[] return a table with all the instances
 ---@field UnpackMythicDungeonInfo fun(self: details, mythicDungeonInfo: mythicdungeoninfo) : boolean, segmentid, number, number, number, string, number, string, number, number, number unpack the mythic dungeon info and return the values
 ---@field CreateRightClickToCloseLabel fun(self: details, parent: frame) : df_label return a df_label with the text "Right click to close", need to set point
+---@field IsValidActor fun(self: details, actor: actor) : boolean return true if the actor is valid
 ---@field 
 ---@field 
+---@field 
+
 
 
 ---@class detailseventlistener : table
@@ -257,9 +260,12 @@
 ---@field bossIcon texturepath|textureid
 ---@field bIsClosed boolean if true the combat is closed (passed by the EndCombat() function)
 ---@field __destroyedBy string
----@field amountCasts {[string]: table<string, number>}
+---@field amountCasts {[string]: table<string, number>} playername -> spellname -> amount
 ---@field instance_type instancetype "raid" or "party" or "pvp" or "arena" or "none" or "scenario"
----@field run_time number
+---@field run_time number mythic plus time without death penalties
+---@field elapsed_time number mythic plus total time
+---@field is_challenge boolean mythic plus challenge mode
+---@field total_segments_added number for a mythic+ overall segment, indicates how many segments were added
 ---@field start_time gametime
 ---@field end_time gametime
 ---@field combat_counter number
