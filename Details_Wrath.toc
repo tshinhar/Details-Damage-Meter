@@ -70,6 +70,8 @@ functions\testbars.lua
 functions\warcraftlogs.lua
 functions\textures.lua
 functions\commentator.lua
+functions\chat_embed.lua
+functions\storage.lua
 
 core\aura_scan.lua
 core\timemachine.lua
