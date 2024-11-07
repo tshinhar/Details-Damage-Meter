@@ -22,4 +22,4 @@ jobs:
           upstream: Tercioo/Details-Damage-Meter      # set the upstream repo
           upstream-branch: master   # set the upstream branch to merge from
           branch: master          # set the branch to merge to
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT }}
