@@ -3,7 +3,7 @@ name: Release AddOn
 on:
   push:
     tags:
-      - '*'
+      - '**'
 
 jobs:
 #  full_package_release:
