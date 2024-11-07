@@ -4,9 +4,6 @@ on:
   push:
     tags:
       - '*'
-    paths-ignore:
-      - '.github/**'
-      - 'ldoc.ltp'
 
 jobs:
 #  full_package_release:
