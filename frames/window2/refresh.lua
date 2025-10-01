@@ -188,9 +188,23 @@ function AllInOneWindow:RefreshHeader(windowFrame) --~header
 
     local columnWidths = windowFrame.settings.header.column_width
 
+    local showColumnText = windowFrame.settings.header.column_show_text
+    local showColumnIcon = windowFrame.settings.header.column_show_icon
+
     for i = 1, #headerColumnsNames do
         local columnId = headerColumnsNames[i]
         local thisColumnData = columnData[columnDataKeyToIndex[columnId]]
+
+        if (showColumnText[columnId] == nil) then
+            showColumnText[columnId] = thisColumnData.showText
+        end
+
+        if (showColumnIcon[columnId] == nil) then
+            showColumnIcon[columnId] = true
+        end
+
+        local showHeaderText = showColumnText[columnId]
+        local showHeaderIcon = showColumnIcon[columnId]
 
         local columnWidth = columnWidths[thisColumnData.name]
         if (columnWidth) then
@@ -202,7 +216,7 @@ function AllInOneWindow:RefreshHeader(windowFrame) --~header
         ---@type details_allinonewindow_headercolumndata
         local headerColumnData = {
             width = thisColumnData.width,
-            text = thisColumnData.text,
+            text = showHeaderText and thisColumnData.text or "",
             name = thisColumnData.name,
             attribute = thisColumnData.attribute,
             subAttribute = thisColumnData.subAttribute,
@@ -215,8 +229,9 @@ function AllInOneWindow:RefreshHeader(windowFrame) --~header
             order = headerFrame.columnOrder,
             offset = thisColumnData.offset,
             key = thisColumnData.key,
-            icon = thisColumnData.icon,
+            icon = showHeaderIcon and thisColumnData.icon or "",
             texcoord = thisColumnData.texcoord,
+            columnSpan = thisColumnData.columnSpan or 0,
         }
 
         headerTable[#headerTable+1] = headerColumnData
@@ -224,6 +239,20 @@ function AllInOneWindow:RefreshHeader(windowFrame) --~header
 
     --the setheadtable is somehow resetting the order set in the 'order' key above
     headerFrame:SetHeaderTable(headerTable) --setting the headerTable, will make the headerFrame to resize itself
+
+    local clearHeaders = {"icon", "rank", "pname"}
+    for i = 1, #clearHeaders do
+        local headerName = clearHeaders[i]
+        local headerColumnFrame = headerFrame:GetHeaderColumnByName(headerName)
+        if (headerColumnFrame) then
+            headerColumnFrame.Text:SetText("")
+            headerColumnFrame.Icon:Hide()
+            if (headerName ~= "pname") then
+                headerColumnFrame.Separator:Hide()
+                headerColumnFrame.resizerButton:Hide()
+            end
+        end
+    end
 
     --the window width has to be the same size of the header
     local headerWidth = headerFrame:GetWidth()
@@ -243,6 +272,8 @@ end
 function AllInOneWindow:RefreshColumn(index, windowFrame, line, headerColumnFrame, containers, headerName, playerName, combatObject, actorObjects)
     local combatTime = combatObject:GetCombatTime()
     if (headerColumnFrame) then
+        headerColumnFrame.actorObject = nil
+
         if (headerName == "icon") then
             local damageActor = actorObjects[DETAILS_ATTRIBUTE_DAMAGE]
             local actorSpec = damageActor.spec
@@ -266,8 +297,20 @@ function AllInOneWindow:RefreshColumn(index, windowFrame, line, headerColumnFram
         elseif (headerName == "dmg") then
             local damageActor = actorObjects[DETAILS_ATTRIBUTE_DAMAGE]
             if damageActor then
+                headerColumnFrame.actorObject = damageActor
                 headerColumnFrame.Text:SetText(Details:Format(damageActor.total))
                 return damageActor.total
+            else
+                headerColumnFrame.Text:SetText("0")
+                return 0
+            end
+
+        elseif (headerName == "dps") then
+            local damageActor = actorObjects[DETAILS_ATTRIBUTE_DAMAGE]
+            if damageActor then
+                headerColumnFrame.actorObject = damageActor
+                headerColumnFrame.Text:SetText(Details:Format(damageActor.total / combatTime))
+                return damageActor.total / combatTime
             else
                 headerColumnFrame.Text:SetText("0")
                 return 0
@@ -276,6 +319,7 @@ function AllInOneWindow:RefreshColumn(index, windowFrame, line, headerColumnFram
         elseif (headerName == "dmgdps") then
             local damageActor = actorObjects[DETAILS_ATTRIBUTE_DAMAGE]
             if damageActor then
+                headerColumnFrame.actorObject = damageActor
                 headerColumnFrame.Text:SetText(Details:Format(damageActor.total) .. " / " .. Details:Format(damageActor.total / combatTime))
                 return damageActor.total
             else
@@ -287,8 +331,20 @@ function AllInOneWindow:RefreshColumn(index, windowFrame, line, headerColumnFram
         elseif (headerName == "heal") then
             local healActor = actorObjects[DETAILS_ATTRIBUTE_HEAL]
             if (healActor) then
+                headerColumnFrame.actorObject = healActor
                 headerColumnFrame.Text:SetText(Details:Format(healActor.total))
                 return healActor.total
+            else
+                headerColumnFrame.Text:SetText("0")
+                return 0
+            end
+
+        elseif (headerName == "hps") then
+            local healActor = actorObjects[DETAILS_ATTRIBUTE_HEAL]
+            if (healActor) then
+                headerColumnFrame.actorObject = healActor
+                headerColumnFrame.Text:SetText(Details:Format(healActor.total / combatTime))
+                return healActor.total / combatTime
             else
                 headerColumnFrame.Text:SetText("0")
                 return 0
@@ -297,6 +353,7 @@ function AllInOneWindow:RefreshColumn(index, windowFrame, line, headerColumnFram
         elseif (headerName == "healhps") then
             local healActor = actorObjects[DETAILS_ATTRIBUTE_HEAL]
             if (healActor) then
+                headerColumnFrame.actorObject = healActor
                 headerColumnFrame.Text:SetText(Details:Format(healActor.total) .. " / " .. Details:Format(healActor.total / combatTime))
                 return healActor.total
             else
@@ -317,6 +374,7 @@ function AllInOneWindow:RefreshColumn(index, windowFrame, line, headerColumnFram
             local utilityActor = actorObjects[DETAILS_ATTRIBUTE_MISC]
             if (utilityActor) then
                 headerColumnFrame.Text:SetText(math.floor(utilityActor.interrupt or 0))
+                headerColumnFrame.actorObject = utilityActor
                 return utilityActor.interrupt or 0
             else
                 headerColumnFrame.Text:SetText("0")
@@ -328,6 +386,7 @@ function AllInOneWindow:RefreshColumn(index, windowFrame, line, headerColumnFram
             local utilityActor = actorObjects[DETAILS_ATTRIBUTE_MISC]
             if (utilityActor) then
                 headerColumnFrame.Text:SetText(math.floor(utilityActor.dispell or 0))
+                headerColumnFrame.actorObject = utilityActor
                 return utilityActor.dispell or 0
             else
                 headerColumnFrame.Text:SetText("0")
