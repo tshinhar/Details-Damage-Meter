@@ -26,7 +26,7 @@ end
 local ticker
 
 --this function is currently called from COMBAT_PLAYER_ENTER
-function AllInOneWindow:StartRefresher() print("test", "starting refresher...")
+function AllInOneWindow:StartRefresher()
     --before starting a timer to keep refreshing, need to refresh the header, do need? the refresh window frames does that.
     if (ticker and not ticker:IsCancelled()) then
         ticker:Cancel()
@@ -35,7 +35,7 @@ function AllInOneWindow:StartRefresher() print("test", "starting refresher...")
 
     local refreshSpeed = 1
     ticker = C_Timer.NewTicker(refreshSpeed, tickerCallback)
-    AllInOneWindow:Print("refresher started.", ticker)
+    --AllInOneWindow:Print("refresher started.", ticker)
 end
 
 function AllInOneWindow:StopRefresher()
@@ -345,6 +345,18 @@ function AllInOneWindow:RefreshColumn(index, windowFrame, line, headerColumnFram
                 return 0
             end
 
+        elseif (headerName == "overheal") then
+            local healActor = actorObjects[DETAILS_ATTRIBUTE_HEAL]
+            if (healActor) then
+                ---@cast healActor actorheal
+                headerColumnFrame.actorObject = healActor
+                headerColumnFrame.Text:SetText(Details:Format(healActor.totalover))
+                return healActor.totalover
+            else
+                headerColumnFrame.Text:SetText("0")
+                return 0
+            end
+
         elseif (headerName == "hps") then
             local healActor = actorObjects[DETAILS_ATTRIBUTE_HEAL]
             if (healActor) then
@@ -370,7 +382,6 @@ function AllInOneWindow:RefreshColumn(index, windowFrame, line, headerColumnFram
         --elseif (headerName == "healhpspercent") then --not implemented
         elseif (headerName == "death") then
             --deaths aren't stored in the misc container, need to get from the combat directly
-            ---@type actorutility
             local playerDeaths = combatObject:GetPlayerDeaths(playerName)
             headerColumnFrame.Text:SetText(playerDeaths and #playerDeaths or 0)
             return playerDeaths and #playerDeaths or 0
