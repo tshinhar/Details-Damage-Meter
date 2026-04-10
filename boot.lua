@@ -17,14 +17,8 @@
 		end
 		local addonName, Details222 = ...
 		local version, build, date, tvs = GetBuildInfo()
-		Details.build_counter = 14850
-		Details.alpha_build_counter = 14850 --if this is higher than the regular counter, use it instead
-		Details.build_counter = 14895
-		Details.alpha_build_counter = 14895 --if this is higher than the regular counter, use it instead
-		Details.build_counter = 14899
-		Details.alpha_build_counter = 14899 --if this is higher than the regular counter, use it instead
-		Details.build_counter = 14900
-		Details.alpha_build_counter = 14900 --if this is higher than the regular counter, use it instead
+		Details.build_counter = 14902
+		Details.alpha_build_counter = 14902 --if this is higher than the regular counter, use it instead
 		Details.dont_open_news = true
 		Details.game_version = version
 		Details.userversion = version .. " " .. Details.build_counter
@@ -104,9 +98,15 @@
 			end
 		end
 
+		Details222.IsTOCBiggerOrEqualTo = function(tocNumber)
+			if tvs >= tocNumber then
+				return true
+			end
+		end
+
 		function Details222.IsPTR1205()
 			local _, _, _, a = GetBuildInfo()
-			if a >= 120005 then
+			if tvs >= 120005 then
 				return true
 			end
 		end
@@ -807,6 +807,8 @@ do
 
 		--store functions to create options frame
 		Details.optionsSection = {}
+
+		Details.ilevel = {}
 
 	--containers
 		--armazenas as fun��es do parser - All parse functions
