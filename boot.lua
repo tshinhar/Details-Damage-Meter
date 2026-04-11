@@ -2130,3 +2130,59 @@ end
 C_Timer.After(5, function()
 --TutorialPointerFrame_1:HookScript("OnShow", function(self) self:Hide() end) --remove on v11 launch
 end)
+
+-- Support for wago addon packs
+DetailsAPI = DetailsAPI or {}
+---@param profileKey string --the name of the profile to be exported
+---@return string --the encoded profile string that can be imported by other users
+function DetailsAPI:ExportProfile(profileKey)
+    local profileString = Details:ExportCurrentProfile(profileKey)
+	return profileString
+end
+
+---@param profileString string --the encoded profile string to be imported
+---@param profileKey string --the name of the profile to be imported
+function DetailsAPI:ImportProfile(profileString, profileKey)
+	local bImportAutoRunCode = false
+	local bIsFromImportPrompt = false
+	local overwriteExisting = true
+	Details:ImportProfile(profileString, profileKey, bImportAutoRunCode, bIsFromImportPrompt, overwriteExisting)
+end
+
+---@param profileString string --the profile string to decode
+---@return table --the decoded profile data as a table
+function DetailsAPI:DecodeProfileString(profileString)
+    local profileTable = Details:DecompressData(profileString, "print")
+	return profileTable
+end
+
+---@param profileName string -- profileKey of an existing profile
+function DetailsAPI:SetProfile(profileName)
+	Details:ApplyProfile(profileName)
+end
+
+---@return table<string, boolean>  -- a table of all available profile keys in the format [profileKey] = true
+function DetailsAPI:GetProfileKeys()
+    local profileList = Details:GetProfileList()
+    local profileKeys = {}
+    for index, key in ipairs(profileList) do
+        profileKeys[key] = true
+    end
+    return profileKeys
+end
+
+---@return string --the profileKey of the currently active profile
+function DetailsAPI:GetCurrentProfileKey()
+    local currentProfileName = Details:GetCurrentProfileName()
+	return currentProfileName
+end
+
+function DetailsAPI:OpenConfig()
+    Details.OpenOptionsWindow()
+end
+
+function DetailsAPI:CloseConfig()
+    if (DetailsPluginContainerWindow and DetailsPluginContainerWindow:IsShown()) then
+        DetailsPluginContainerWindow:Hide()
+    end
+end
