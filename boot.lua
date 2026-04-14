@@ -2178,11 +2178,19 @@ function DetailsAPI:GetCurrentProfileKey()
 end
 
 function DetailsAPI:OpenConfig()
-    Details.OpenOptionsWindow()
+    Details_OpenDefaultOptionsWindow()
 end
 
 function DetailsAPI:CloseConfig()
     if (DetailsPluginContainerWindow and DetailsPluginContainerWindow:IsShown()) then
         DetailsPluginContainerWindow:Hide()
     end
+end
+
+---return a ready only table with which profile is assigned to other characters of the account.
+---@param self details
+---@return table<charname, profilekey> --a table in the format [charName] = profileKey
+function DetailsAPI:GetProfileAssignments()
+	local result = DetailsFramework.table.copy({}, _detalhes_global.__char_profiles)
+	return result
 end
