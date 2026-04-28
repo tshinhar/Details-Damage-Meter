@@ -5,13 +5,13 @@ if not L then return end
 L = L or {}
 
 
+L["STRING_OPTIONS_SELECT_TEMPLATE"] = "Select Template"
+L["STRING_OPTIONS_TEXT_SHADOWCOLOR"] = "Shadow Color"
+L["STRING_OPTIONS_TEXT_SHADOWOFFSET"] = "Shadow Offset %s"
 L["STRING_OPTIONS_PLAYERNAME"] = "Player Name"
 L["STRING_OPTIONS_PLAYERNAME_AUTO_WIDTH"] = "Length Auto"
 L["STRING_OPTIONS_PLAYERNAME_WIDTH"] = "Length"
-
 L["STRING_ATTRIBUTE_HEAL_POTIONS"] = "Potions"
-
-
 L["STRING_SIMPLE_TEXT_FORMAT_TITLE"] = "Midnight Right Text: Simple or Aligned"
 L["STRING_SIMPLE_TEXT_FORMAT"] = "Use Simple Text Formatting"
 L["STRING_SIMPLE_TEXT_FORMAT_DESC"] = "Enable the use of the three rules below."
@@ -20,7 +20,7 @@ L["STRING_SIMPLE_TEXT_FORMAT_TYPE2"] = "When the line has information\nabout the
 L["STRING_SIMPLE_TEXT_FORMAT_TYPE1"] = "When the line has information\nabout the total and percent.\n|cFFAAAAAA%s order: total, percent."
 L["STRING_SIMPLE_TEXT_FORMAT_ASLIGNED"] = "Use Aligned Text"
 L["STRING_SIMPLE_TEXT_FORMAT_ASLIGNED_DESC"] = "The text is aligned in columns, setup the spacing between columns."
-L["STRING_SIMPLE_TEXT_FORMAT_ASLIGNED_SPACE_BETWEEN"] = "Space Between Columns"
+L["STRING_SIMPLE_TEXT_FORMAT_ASLIGNED_SPACE_BETWEEN"] = "Columns Gap"
 L["STRING_SIMPLE_TEXT_FORMAT_TEMPLATE2"] = "Don't Show Percent"
 L["STRING_SIMPLE_TEXT_FORMAT_TEMPLATE3"] = "Only Show Total"
 L["STRING_SIMPLE_TEXT_FORMAT_TEMPLATE4"] = "Separate | by | Pipe"
